@@ -32,6 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE r.reservation_id = ? AND r.hotel_id = ?";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, 'ii', $input, $_SESSION['hotel_id']);
+    } else {
+        // Search by email
+        $sql = "SELECT r.*, c.first_name, c.last_name
+                FROM Reservation r
+                JOIN Customer c ON r.customer_id = c.customer_id
+                WHERE c.email = ? AND r.hotel_id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'si', $input, $_SESSION['hotel_id']);
     }
 
     mysqli_stmt_execute($stmt);
