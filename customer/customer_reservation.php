@@ -32,6 +32,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Both fields are required.";
         }
     }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'update') {
+        // Update reservation
+        $reservation_id = intval($_POST['reservation_id']);
+        $email = trim($_POST['email']);
+        $arrival_date = $_POST['arrival_date'];
+        $departure_date = $_POST['departure_date'];
+        $num_guests = intval($_POST['num_guests']);
+
+        if ($arrival_date >= $departure_date) {
+            $error = "Departure date must be after arrival date.";
+        } else {
+            $sql = "UPDATE Reservation r
+                    JOIN Customer c ON r.customer_id = c.cu.
+                    .0stomer_id
+                    SET r.arrival_date = ?, r.departure_date = ?, r.num_guests = ?
+                    WHERE r.reservation_id = ? AND c.email = ? AND r.status IN ('PENDING', 'CONFIRMED')";
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, 'ssiis', $arrival_date, $departure_date, $num_guests, $reservation_id, $email);
+            mysqli_stmt_execute($stmt);
+
+            if (mysqli_stmt_affected_rows($stmt) > 0) {
+                $success = "Reservation updated successfully.";
+
+                // Reload updated reservation
+                $sql = "SELECT r.*, c.first_name, c.last_name, c.email, c.phone, h.name AS hotel_name, rt.description AS room_type
+                        FROM Reservation r
+                        JOIN Customer c ON r.customer_id = c.customer_id
+                        JOIN Hotel h ON r.hotel_id = h.hotel_id
+                        JOIN RoomType rt ON r.room_type_id = rt.room_type_id
+                        WHERE r.reservation_id = ? AND c.email = ?";
+                $stmt2 = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt2, 'is', $reservation_id, $email);
+                mysqli_stmt_execute($stmt2);
+                $result = mysqli_stmt_get_result($stmt2);
+                $reservation = mysqli_fetch_assoc($result);
+                mysqli_stmt_close($stmt2);
+            } else {
+                $error = "Failed to update reservation or no changes made.";
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
 }
 ?>
 
