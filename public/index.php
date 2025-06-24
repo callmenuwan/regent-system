@@ -85,5 +85,79 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
 
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(function(){
+  $('#checkBtn').on('click', function(){
+    const data = $('#availabilityForm').serialize();
+    $('#availabilityResult').html('<div class="alert alert-info">Checking...</div>');
+
+    $.ajax({
+      url: 'check_availability.php',
+      method: 'GET',
+      data: data,
+      dataType: 'text'    // <-- change here
+    })
+    .done(function(textResp) {
+        console.log('RAW RESPONSE:', textResp);
+
+        // Find the first '{' and strip any garbage before it
+        const idx = textResp.indexOf('{');
+        if (idx === -1) {
+            return $('#availabilityResult').html(
+            `<div class="alert alert-danger">
+                Invalid server response:<br><pre>${textResp}</pre>
+            </div>`
+            );
+        }
+        const jsonText = textResp.slice(idx);
+
+        let resp;
+        try {
+            resp = JSON.parse(jsonText);
+        } catch (e) {
+            return $('#availabilityResult').html(
+            `<div class="alert alert-danger">
+                JSON parse error:<br><pre>${jsonText}</pre>
+            </div>`
+            );
+        }
+
+        // Now the rest stays the same...
+        if (resp.error) {
+            return $('#availabilityResult').html(
+            `<div class="alert alert-danger">${resp.error}</div>`
+            );
+        }
+        if (resp.available > 0) {
+            $('#availabilityResult').html(
+            `<div class="alert alert-success">
+                Available rooms: ${resp.available}
+            </div>
+            <a href="book.php?hotel_id=${resp.hotel_id}
+                &room_type_id=${resp.room_type_id}
+                &arrival_date=${resp.arrival_date}
+                &departure_date=${resp.departure_date}
+                &num_guests=${resp.num_guests}"
+                class="btn btn-success mt-2">Proceed to Reservation</a>`
+            );
+        } else {
+            $('#availabilityResult').html(
+            `<div class="alert alert-danger">No rooms available for your selection.</div>`
+            );
+        }
+        })
+
+    .fail(function(xhr, status, error) {
+      console.error('AJAX ERROR', status, error, xhr.responseText);
+      $('#availabilityResult').html(
+        `<div class="alert alert-danger">
+           AJAX request failed: ${status}<br>
+           See console for details.
+         </div>`
+      );
+    });
+  });
+});
+</script>
 
 <?php include '../includes/footer-public.php'; ?>

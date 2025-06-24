@@ -52,4 +52,77 @@ if (!mysqli_stmt_fetch($stmt)) {
     exit;
 }
 mysqli_stmt_close($stmt);
+
+// 2) Count overlapping customer reservations
+$stmt = mysqli_prepare($conn,"
+  SELECT COUNT(*) 
+  FROM Reservation
+  WHERE hotel_id=? AND room_type_id=?
+    AND status IN ('PENDING','CONFIRMED')
+    AND arrival_date < ? AND departure_date > ?");
+mysqli_stmt_bind_param($stmt,'iiss',$hotel_id,$room_type_id,$departure_date,$arrival_date);
+mysqli_stmt_execute($stmt);
+mysqli_stmt_bind_result($stmt,$booked_customers);
+mysqli_stmt_fetch($stmt);
+mysqli_stmt_close($stmt);
+
+// 2b) Count overlapping block bookings (only for non-residential)
+$blocked = 0;
+if (!$is_residential) {
+    $stmt = mysqli_prepare($conn,"
+      SELECT COALESCE(SUM(num_rooms),0)
+      FROM BlockBooking
+      WHERE hotel_id=? AND room_type_id=?
+        AND arrival_date < ? AND departure_date > ?");
+    mysqli_stmt_bind_param($stmt,'iiss',$hotel_id,$room_type_id,$departure_date,$arrival_date);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_result($stmt,$blocked);
+    mysqli_stmt_fetch($stmt);
+    mysqli_stmt_close($stmt);
+}
+
+// 3) Compute availability
+$available = max(0, $total_rooms - ($booked_customers + $blocked));
+
+// 4) If non-residential, enforce guest-capacity logic
+if (!$is_residential) {
+    
+    $capacities = [
+        1 => 2,  // room_type_id=1 (Standard)
+        2 => 3,  // Deluxe
+        3 => 5,  // Suite (hotel)
+    ];
+    if (!isset($capacities[$room_type_id])) {
+        echo json_encode(['error'=>'Unknown room capacity','available'=>0]);
+        exit;
+    }
+    $needed_rooms = (int) ceil($num_guests / $capacities[$room_type_id]);
+    if ($available < $needed_rooms) {
+        echo json_encode([
+            'error'     => "Not enough rooms: need {$needed_rooms}, only {$available} available",
+            'available' => $available
+        ]);
+        exit;
+    }
+    // Return success for hotel rooms
+    echo json_encode([
+        'hotel_id'       => $hotel_id,
+        'room_type_id'   => $room_type_id,
+        'arrival_date'   => $arrival_date,
+        'departure_date' => $departure_date,
+        'num_guests'     => $num_guests,
+        'available'      => $available,
+        'needed_rooms'   => $needed_rooms
+    ]);
+} else {
+    // Residential suite: each reservation occupies 1 suite
+    echo json_encode([
+        'hotel_id'       => $hotel_id,
+        'room_type_id'   => $room_type_id,
+        'arrival_date'   => $arrival_date,
+        'departure_date' => $departure_date,
+        'num_guests'     => $num_guests,
+        'available'      => $available
+    ]);
+}
 exit;
