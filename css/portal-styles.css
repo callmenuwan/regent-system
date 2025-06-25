@@ -1,0 +1,39 @@
+body {
+  background: #eaf1ff;
+}
+
+/* Nav */
+
+nav {
+  background: linear-gradient(to right, #3730a3, #2563eb);
+}
+nav .nav-link {
+  color: #ffffff;
+}
+nav .nav-link:hover {
+  color: #ddc7ff;
+}
+h5.portal-logo {
+  color: #ffffff;
+  margin: 0 15px 0px 0;
+}
+.dropdown-toggle::after {
+  color: #ffffff;
+}
+
+/*  Login pages */
+
+.portal-login-page {
+  background: linear-gradient(to right, #3730a3, #2563eb);
+}
+.portal-login-page form {
+  box-shadow: 0px 5px 25px #09072a45;
+  background: #eaf1ff;
+  width: 35%;
+  padding: 35px;
+  margin: 10% auto 10% auto;
+  border-radius: 10px;
+}
+.portal-login-page form input {
+  margin-bottom: 9px;
+}
