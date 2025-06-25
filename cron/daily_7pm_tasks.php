@@ -1,9 +1,4 @@
-<!-- Assumptions-We’ll simulate:
-No actual payment processing.
-Each reservation is worth 100.00 per night (static value for now).
-We're only tracking billing for no-show reservations, not full stay. -->
-
-
+#!/usr/bin/php
 <?php
 require_once __DIR__ . '/../includes/db.php';
 
