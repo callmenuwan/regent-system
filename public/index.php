@@ -11,17 +11,23 @@ include('../includes/db.php');
 
 // Fetch hotels
 $hotels = [];
-$hRes = mysqli_query($conn, "SELECT hotel_id, name FROM Hotel ORDER BY name");
+$hRes = mysqli_query($conn, "SELECT hotel_id, name FROM hotel ORDER BY name");
 while ($h = mysqli_fetch_assoc($hRes)) {
     $hotels[] = $h;
 }
 
 // Fetch room types
 $roomTypes = [];
-$rtRes = mysqli_query($conn, "SELECT room_type_id, code, description FROM RoomType ORDER BY room_type_id");
+$rtRes = mysqli_query($conn, "SELECT room_type_id, code, is_residential, description FROM roomtype ORDER BY room_type_id");
 while ($rt = mysqli_fetch_assoc($rtRes)) {
     $roomTypes[] = $rt;
 }
+
+$resFlags = [];
+foreach ($roomTypes as $rt) {
+    $resFlags[$rt['room_type_id']] = (bool)$rt['is_residential'];
+}
+
 ?>
 
 <?php include '../includes/header-public.php'; ?>
@@ -44,16 +50,7 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
             </select>
           </div>
 
-          <div class="col-md-6">
-            <label for="arrival" class="form-label">Arrival Date</label>
-            <input type="date" id="arrival" name="arrival_date" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label for="departure" class="form-label">Departure Date</label>
-            <input type="date" id="departure" name="departure_date" class="form-control" required>
-          </div>
-
-          <div class="col-md-6">
+          <div class="col-md-12">
             <label for="room_type" class="form-label">Room Type</label>
             <select id="room_type" name="room_type_id" class="form-select" required>
               <option value="">-- Choose Type --</option>
@@ -66,6 +63,27 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
           </div>
 
           <div class="col-md-6">
+            <label for="arrival" class="form-label">Arrival Date</label>
+            <input type="date" id="arrival" name="arrival_date" class="form-control" required>
+          </div>
+          <!-- Departure Date (auto-filled or editable) -->
+          <div class="col-md-6" id="departure-container">
+            <label for="departure" class="form-label">Departure Date</label>
+            <input type="date" id="departure" name="departure_date" class="form-control" required readonly>
+          </div>
+
+          <!-- Residential Booking Duration -->
+          <div class="col-md-6" id="weeks-group" style="display: none;">
+            <label for="num_weeks" class="form-label">Number of Weeks</label>
+            <input type="number" id="num_weeks" name="num_weeks" class="form-control" min="1">
+          </div>
+
+          <div class="col-md-6" id="months-group" style="display: none;">
+            <label for="num_months" class="form-label">Number of Months</label>
+            <input type="number" id="num_months" name="num_months" class="form-control" min="1">
+          </div>
+
+          <div class="col-md-6">
             <label for="guests" class="form-label">Guests</label>
             <input type="number" id="guests" name="num_guests" class="form-control" value="1" min="1" required>
           </div>
@@ -73,6 +91,7 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
           <div class="col-md-12 align-self-end">
             <button id="checkBtn" type="button" class="btn btn-primary w-100">Check Availability</button>
           </div>
+
         </form>
 
         <div id="availabilityResult" class="mt-4"></div>
@@ -87,12 +106,67 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(function(){
+
+  // Hide weeks/months for non-residential types
+
+  const isResidential = <?= json_encode($resFlags) ?>;
+
+  function recalculateDeparture() {
+    const arrival = $('#arrival').val();
+    const isRes = isResidential[$('#room_type').val()];
+    let departure = '';
+
+    if (!arrival) return;
+
+    const arrivalDate = new Date(arrival);
+
+    if (isRes) {
+      const weeks = parseInt($('#num_weeks').val()) || 0;
+      const months = parseInt($('#num_months').val()) || 0;
+
+      const resultDate = new Date(arrivalDate);
+
+      if (months > 0) {
+        resultDate.setMonth(resultDate.getMonth() + months);
+      } else if (weeks > 0) {
+        resultDate.setDate(resultDate.getDate() + (weeks * 7));
+      }
+
+      if (weeks || months) {
+        const iso = resultDate.toISOString().split('T')[0];
+        $('#departure').val(iso);
+      } else {
+        $('#departure').val('');
+      }
+    }
+  }
+
+  $('#room_type').on('change', function(){
+    const isRes = isResidential[this.value];
+
+    if (isRes) {
+  $('#weeks-group, #months-group').show();
+  $('#departure').prop('readonly', true).val('');
+} else {
+  $('#weeks-group, #months-group').hide();
+  $('#num_weeks, #num_months').val('');
+  $('#departure').prop('readonly', false).val('');
+}
+
+    recalculateDeparture();
+  }).trigger('change');
+
+  $('#num_weeks, #num_months, #arrival').on('input change', recalculateDeparture);
+
+
+  // Handle form submission
+
   $('#checkBtn').on('click', function(){
     const data = $('#availabilityForm').serialize();
     $('#availabilityResult').html('<div class="alert alert-info">Checking...</div>');
 
     $.ajax({
-      url: 'check_availability.php',
+      url: '../reservation-engine/check_availability.php',
       method: 'GET',
       data: data,
       dataType: 'text'    // <-- change here
@@ -133,7 +207,7 @@ $(function(){
             `<div class="alert alert-success">
                 Available rooms: ${resp.available}
             </div>
-            <a href="book.php?hotel_id=${resp.hotel_id}
+            <a href="../reservation-engine/book.php?hotel_id=${resp.hotel_id}
                 &room_type_id=${resp.room_type_id}
                 &arrival_date=${resp.arrival_date}
                 &departure_date=${resp.departure_date}
