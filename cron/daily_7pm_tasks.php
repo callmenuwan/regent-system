@@ -7,12 +7,12 @@ $today = date('Y-m-d');
 
 // 1. Cancel pending reservations for today without credit card
 $cancel_sql = "
-  UPDATE Reservation
+  UPDATE reservation
   SET status = 'CANCELLED'
   WHERE status = 'PENDING'
     AND arrival_date = ?
     AND reservation_id NOT IN (
-      SELECT reservation_id FROM ReservationCreditCard
+      SELECT reservation_id FROM reservationcreditcard
     )";
 $stmt = mysqli_prepare($conn, $cancel_sql);
 mysqli_stmt_bind_param($stmt, 's', $today);
@@ -74,16 +74,26 @@ $report_sql = "
 $stmt = mysqli_prepare($conn, $report_sql);
 mysqli_stmt_bind_param($stmt, 'ss', $today, $today);
 mysqli_stmt_execute($stmt);
+
+// Rewind previous result set before running new queries
+mysqli_stmt_store_result($stmt);
 mysqli_stmt_bind_result($stmt, $h_id, $occupied, $revenue);
 
 while (mysqli_stmt_fetch($stmt)) {
-  $insert = "INSERT INTO dailyreport (report_date, hotel_id, rooms_occupied, revenue)
-             VALUES (?, ?, ?, ?)";
-  $stmt2 = mysqli_prepare($conn, $insert);
-  mysqli_stmt_bind_param($stmt2, 'siid', $today, $h_id, $occupied, $revenue);
-  mysqli_stmt_execute($stmt2);
-  mysqli_stmt_close($stmt2);
+    // Insert into DailyReport
+    $insert = "INSERT INTO dailyreport (report_date, hotel_id, rooms_occupied, revenue)
+               VALUES (?, ?, ?, ?)";
+    $stmt2 = mysqli_prepare($conn, $insert);
+    if (!$stmt2) {
+        echo "Error preparing statement: " . mysqli_error($conn);
+        continue;
+    }
+    mysqli_stmt_bind_param($stmt2, 'siid', $today, $h_id, $occupied, $revenue);
+    mysqli_stmt_execute($stmt2);
+    mysqli_stmt_close($stmt2);
 }
+
+// Close the original $stmt AFTER fetching
 mysqli_stmt_close($stmt);
 
 echo "Done: Cancelled = $cancelled, No-shows = " . count($noshow_ids) . "\n";
