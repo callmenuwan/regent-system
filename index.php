@@ -4,27 +4,32 @@ Wired a jQuery AJAX call to check_availability.php
 Displayed the availability result and added a “Proceed to Booking” link when available 
 -->
 
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+?>
+
 
 <?php
 // No auth required
-include('includes/db.php');
+include __DIR__ . '/includes/db.php';
 
 // Fetch hotels
 $hotels = [];
-$hRes = mysqli_query($conn, "SELECT hotel_id, name FROM Hotel ORDER BY name");
+$hRes = mysqli_query($conn, "SELECT hotel_id, name FROM hotel ORDER BY name");
 while ($h = mysqli_fetch_assoc($hRes)) {
     $hotels[] = $h;
 }
 
 // Fetch room types
 $roomTypes = [];
-$rtRes = mysqli_query($conn, "SELECT room_type_id, code, description FROM RoomType ORDER BY room_type_id");
+$rtRes = mysqli_query($conn, "SELECT room_type_id, code, description FROM roomtype ORDER BY room_type_id");
 while ($rt = mysqli_fetch_assoc($rtRes)) {
     $roomTypes[] = $rt;
 }
 ?>
 
-<?php include 'includes/header-public.php'; ?>
+<?php include __DIR__ . '/includes/header-public.php'; ?>
 
 <!-- Header section -->
 <div id="home-hero-section">
@@ -35,7 +40,7 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
           <h1 class="fw-light">Your Holiday with Regent Hotels</h1>
           <p class="lead">Something short and leading about the collection below—its contents, the creator, etc. Make it short and sweet, but not too short so folks don’t simply skip over it entirely.</p>
           <p>
-            <a href="/regent/public/index.php" class="btn btn-primary my-2">Book Now</a>
+            <a href="/public/index.php" class="btn btn-primary my-2">Book Now</a>
           </p>
         </div>
       </div>
@@ -52,10 +57,7 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
         <!-- Regent Beach - Galle -->
         <div class="col">
           <div class="card shadow-sm">
-            <svg aria-label="Placeholder: Thumbnail" class="bd-placeholder-img card-img-top" height="225" preserveAspectRatio="xMidYMid slice" role="img" width="100%" xmlns="http://www.w3.org/2000/svg">
-              <title>Placeholder</title>
-              <rect width="100%" height="100%" fill="#55595c"></rect>
-            </svg>
+            <img src="/images/hotel-A.jpg" alt="">
             <div class="card-body">
               <h4>Regent Beach - Galle</h4>
               <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
@@ -72,10 +74,7 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
         <!-- Queens Castle - Kandy -->
         <div class="col">
           <div class="card shadow-sm">
-            <svg aria-label="Placeholder: Thumbnail" class="bd-placeholder-img card-img-top" height="225" preserveAspectRatio="xMidYMid slice" role="img" width="100%" xmlns="http://www.w3.org/2000/svg">
-              <title>Placeholder</title>
-              <rect width="100%" height="100%" fill="#55595c"></rect>
-            </svg>
+            <img src="/images/hotel-B.jpg" alt="">
             <div class="card-body">
               <h4>Queens Castle - Kandy</h4>
               <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
@@ -92,10 +91,7 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
         <!-- Regent Ella - Bandarawela -->
         <div class="col">
           <div class="card shadow-sm">
-            <svg aria-label="Placeholder: Thumbnail" class="bd-placeholder-img card-img-top" height="225" preserveAspectRatio="xMidYMid slice" role="img" width="100%" xmlns="http://www.w3.org/2000/svg">
-              <title>Placeholder</title>
-              <rect width="100%" height="100%" fill="#55595c"></rect>
-            </svg>
+            <img src="/images/hotel-C.jpg" alt="">
             <div class="card-body">
               <h4>Regent Ella - Bandarawela</h4>
               <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
@@ -115,4 +111,4 @@ while ($rt = mysqli_fetch_assoc($rtRes)) {
 <!-- End Album section -->
 
 
-<?php include 'includes/footer-public.php'; ?>
+<?php include __DIR__ . '/includes/footer-public.php'; ?>
