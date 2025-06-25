@@ -28,7 +28,7 @@
               <a href="/regent/clerk/clerk_checkout.php" class="nav-link px-2">[ Check Out ]</a>
             </li>
             <li>
-              <a href="/regent/clerk/clerk_find_reservation.php" class="nav-link px-2">[ Find Reservation ]</a>
+              <a href="/regent/clerk/clerk_pending_reservations.php" class="nav-link px-2">[ Pending Reservations ]</a>
             </li>
             <li>
               <a href="/regent/clerk/clerk_walkin.php" class="nav-link px-2">[ Walk-in Reservation ]</a>
